@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  schedule:
+    - cron: '0 0 * * 5'
+  workflow_dispatch:
+  push:
+
+jobs:
+  release:
+    runs-on: macos-latest
+    env:
+      RELEASE_TAG: emacs
+    
+    steps:
+      - name: Precheck
+        run: |
+          # Check if release exists
+          if gh release view ${{ env.RELEASE_TAG }} &>/dev/null; then
+            gh release delete ${{ env.RELEASE_TAG }} -y
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: mayphus/emacs
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          brew install autoconf automake texinfo libxml2 jansson libgccjit
+
+      - name: Build
+        run: |
+          ./autogen.sh
+          # ./configure --with-native-compilation --with-json --with-modules --with-xml2 --with-gnutls
+          ./configure
+          make
+          # make install
+
+      - name: Pack
+        run: |
+          cd nextstep
+          ls
+          echo "Emacs.app"
+          ls Emacs.app
+          tar -czf ../Emacs.app.tar.gz Emacs.app
+          cd ..
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: "Emacs"
+          body: |
+            Build of Emacs master branch for macOS
+          files: Emacs.app.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -387,3 +387,11 @@ exec/config.h.in
 exec/config-mips.m4
 exec/configure
 exec/*.s.s
+
+# Allow .github directory
+!.github/
+!.github/**/
+
+# Emacs build artifacts
+install/
+Emacs-master-mac.tar.gz
